@@ -46,7 +46,7 @@ export const AUTOCOMPLETE_VALUE_ACCESSOR: any = {
                     </li>
                     <li *ngIf="noResults && emptyMessage" class="ui-autocomplete-list-item ui-corner-all">
                         <span *ngIf="!emptyMessageTemplate">{{emptyMessage}}</span>
-                        <ng-container *ngTemplateOutlet="emptyMessageTemplate"></ng-container>
+                        <ng-container *ngTemplateOutlet="emptyMessageTemplate; context: {$implicit: emptyMessage}"></ng-container>
                     </li>
                 </ul>
             </div>
@@ -297,7 +297,7 @@ export class AutoComplete implements AfterViewChecked,AfterContentInit,DoCheck,C
                     this.selectedItemTemplate = item.template;
                 break;
 
-                case 'emptyTemplate':
+                case 'emptyMessage':
                     this.emptyMessageTemplate = item.template;
                 break;
 
