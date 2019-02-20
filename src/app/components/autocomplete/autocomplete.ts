@@ -44,7 +44,10 @@ export const AUTOCOMPLETE_VALUE_ACCESSOR: any = {
                         <span *ngIf="!itemTemplate">{{resolveFieldData(option)}}</span>
                         <ng-container *ngTemplateOutlet="itemTemplate; context: {$implicit: option, index: idx}"></ng-container>
                     </li>
-                    <li *ngIf="noResults && emptyMessage" class="ui-autocomplete-list-item ui-corner-all">{{emptyMessage}}</li>
+                    <li *ngIf="noResults && emptyMessage" class="ui-autocomplete-list-item ui-corner-all">
+                        <span *ngIf="!emptyMessageTemplate">{{emptyMessage}}</span>
+                        <ng-container *ngTemplateOutlet="emptyMessageTemplate"></ng-container>
+                    </li>
                 </ul>
             </div>
         </span>
@@ -106,7 +109,7 @@ export class AutoComplete implements AfterViewChecked,AfterContentInit,DoCheck,C
     @Input() type: string = 'text';
 
     @Input() autoZIndex: boolean = true;
-    
+
     @Input() baseZIndex: number = 0;
 
     @Input() ariaLabel: string;
@@ -167,6 +170,8 @@ export class AutoComplete implements AfterViewChecked,AfterContentInit,DoCheck,C
 
     itemTemplate: TemplateRef<any>;
 
+    emptyMessageTemplate: TemplateRef<any>;
+
     selectedItemTemplate: TemplateRef<any>;
 
     value: any;
@@ -219,7 +224,7 @@ export class AutoComplete implements AfterViewChecked,AfterContentInit,DoCheck,C
 
     set suggestions(val:any[]) {
         this._suggestions = val;
-        
+
         if (this.immutable) {
             this.handleSuggestionsChange();
         }
@@ -276,7 +281,7 @@ export class AutoComplete implements AfterViewChecked,AfterContentInit,DoCheck,C
                     this.hide();
                 }
             }
-    
+
             this.loading = false;
         }
     }
@@ -290,6 +295,10 @@ export class AutoComplete implements AfterViewChecked,AfterContentInit,DoCheck,C
 
                 case 'selectedItem':
                     this.selectedItemTemplate = item.template;
+                break;
+
+                case 'emptyTemplate':
+                    this.emptyMessageTemplate = item.template;
                 break;
 
                 default:
@@ -401,7 +410,7 @@ export class AutoComplete implements AfterViewChecked,AfterContentInit,DoCheck,C
     show() {
         if (this.multiInputEL || this.inputEL) {
             let hasFocus = this.multiple ? document.activeElement == this.multiInputEL.nativeElement : document.activeElement == this.inputEL.nativeElement ;
-            
+
             if (!this.overlayVisible && hasFocus) {
                 this.overlayVisible = true;
             }
@@ -711,7 +720,7 @@ export class AutoComplete implements AfterViewChecked,AfterContentInit,DoCheck,C
         this.documentResizeListener = this.onWindowResize.bind(this);
         window.addEventListener('resize', this.documentResizeListener);
     }
-    
+
     unbindDocumentResizeListener() {
         if (this.documentResizeListener) {
             window.removeEventListener('resize', this.documentResizeListener);
