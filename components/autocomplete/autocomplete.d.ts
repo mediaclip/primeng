@@ -55,6 +55,7 @@ export declare class AutoComplete implements AfterViewChecked, AfterContentInit,
     templates: QueryList<any>;
     overlay: HTMLDivElement;
     itemTemplate: TemplateRef<any>;
+    emptyMessageTemplate: TemplateRef<any>;
     selectedItemTemplate: TemplateRef<any>;
     value: any;
     _suggestions: any[];
