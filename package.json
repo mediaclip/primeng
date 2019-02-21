@@ -1,6 +1,6 @@
 {
   "name": "@mediaclip/primeng",
-  "version": "7.0.5-2",
+  "version": "7.0.5-3",
   "license": "MIT",
   "scripts": {
     "ng": "ng",
