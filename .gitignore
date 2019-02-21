@@ -4,7 +4,9 @@
 /dist
 /tmp
 /out-tsc
-/components
+/components/**/*.spec.*
+/components/**/*.ngfactory.*
+/components/**/*.ngsummary.*
 /resources
 /aot
 
