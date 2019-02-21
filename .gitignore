@@ -7,7 +7,6 @@
 /components/**/*.spec.*
 /components/**/*.ngfactory.*
 /components/**/*.ngsummary.*
-/resources
 /aot
 
 # dependencies
