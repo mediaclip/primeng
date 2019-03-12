@@ -37,13 +37,17 @@ var MenuItemContent = /** @class */ (function () {
 }());
 exports.MenuItemContent = MenuItemContent;
 var Menu = /** @class */ (function () {
-    function Menu(el, renderer) {
+    function Menu(el, renderer, cd, zone) {
         this.el = el;
         this.renderer = renderer;
+        this.cd = cd;
+        this.zone = zone;
         this.autoZIndex = true;
         this.baseZIndex = 0;
         this.showTransitionOptions = '225ms ease-out';
         this.hideTransitionOptions = '195ms ease-in';
+        this.onShow = new core_1.EventEmitter();
+        this.onHide = new core_1.EventEmitter();
     }
     Menu.prototype.toggle = function (event) {
         if (this.visible)
@@ -56,12 +60,14 @@ var Menu = /** @class */ (function () {
         this.target = event.currentTarget;
         this.visible = true;
         this.preventDocumentDefault = true;
+        this.cd.markForCheck();
     };
     Menu.prototype.onOverlayAnimationStart = function (event) {
         switch (event.toState) {
             case 'visible':
                 if (this.popup) {
                     this.container = event.element;
+                    this.onShow.emit();
                     this.moveOnTop();
                     this.appendOverlay();
                     domhandler_1.DomHandler.absolutePosition(this.container, this.target);
@@ -71,6 +77,15 @@ var Menu = /** @class */ (function () {
                 break;
             case 'void':
                 this.onOverlayHide();
+                break;
+        }
+    };
+    Menu.prototype.onOverlayAnimationDone = function (event) {
+        switch (event.toState) {
+            case 'visible':
+                break;
+            case 'void':
+                this.onHide.emit();
                 break;
         }
     };
@@ -94,6 +109,7 @@ var Menu = /** @class */ (function () {
     };
     Menu.prototype.hide = function () {
         this.visible = false;
+        this.cd.markForCheck();
     };
     Menu.prototype.onWindowResize = function () {
         this.hide();
@@ -119,11 +135,15 @@ var Menu = /** @class */ (function () {
     Menu.prototype.bindDocumentClickListener = function () {
         var _this = this;
         if (!this.documentClickListener) {
-            this.documentClickListener = this.renderer.listen('document', 'click', function () {
-                if (!_this.preventDocumentDefault) {
-                    _this.hide();
-                }
-                _this.preventDocumentDefault = false;
+            this.zone.runOutsideAngular(function () {
+                _this.documentClickListener = _this.renderer.listen('document', 'click', function () {
+                    if (!_this.preventDocumentDefault) {
+                        _this.zone.run(function () {
+                            _this.hide();
+                        });
+                    }
+                    _this.preventDocumentDefault = false;
+                });
             });
         }
     };
@@ -203,13 +223,21 @@ var Menu = /** @class */ (function () {
         __metadata("design:type", String)
     ], Menu.prototype, "hideTransitionOptions", void 0);
     __decorate([
+        core_1.Output(),
+        __metadata("design:type", core_1.EventEmitter)
+    ], Menu.prototype, "onShow", void 0);
+    __decorate([
+        core_1.Output(),
+        __metadata("design:type", core_1.EventEmitter)
+    ], Menu.prototype, "onHide", void 0);
+    __decorate([
         core_1.ViewChild('container'),
         __metadata("design:type", core_1.ElementRef)
     ], Menu.prototype, "containerViewChild", void 0);
     Menu = __decorate([
         core_1.Component({
             selector: 'p-menu',
-            template: "\n        <div #container [ngClass]=\"{'ui-menu ui-widget ui-widget-content ui-corner-all': true, 'ui-menu-dynamic ui-shadow': popup}\"\n            [class]=\"styleClass\" [ngStyle]=\"style\" (click)=\"preventDocumentDefault=true\" *ngIf=\"!popup || visible\"\n            [@overlayAnimation]=\"{value: 'visible', params: {showTransitionParams: showTransitionOptions, hideTransitionParams: hideTransitionOptions}}\" [@.disabled]=\"popup !== true\" (@overlayAnimation.start)=\"onOverlayAnimationStart($event)\">\n            <ul>\n                <ng-template ngFor let-submenu [ngForOf]=\"model\" *ngIf=\"hasSubMenu()\">\n                    <li class=\"ui-menu-separator ui-widget-content\" *ngIf=\"submenu.separator\" [ngClass]=\"{'ui-helper-hidden': submenu.visible === false}\"></li>\n                    <li class=\"ui-submenu-header ui-widget-header ui-corner-all\" [attr.data-automationid]=\"submenu.automationId\" *ngIf=\"!submenu.separator\" [ngClass]=\"{'ui-helper-hidden': submenu.visible === false}\">{{submenu.label}}</li>\n                    <ng-template ngFor let-item [ngForOf]=\"submenu.items\">\n                        <li class=\"ui-menu-separator ui-widget-content\" *ngIf=\"item.separator\" [ngClass]=\"{'ui-helper-hidden': (item.visible === false ||\u00A0submenu.visible === false)}\"></li>\n                        <li class=\"ui-menuitem ui-widget ui-corner-all\" *ngIf=\"!item.separator\" [pMenuItemContent]=\"item\" [ngClass]=\"{'ui-helper-hidden': (item.visible === false || submenu.visible === false)}\" [ngStyle]=\"item.style\" [class]=\"item.styleClass\"></li>\n                    </ng-template>\n                </ng-template>\n                <ng-template ngFor let-item [ngForOf]=\"model\" *ngIf=\"!hasSubMenu()\">\n                    <li class=\"ui-menu-separator ui-widget-content\" *ngIf=\"item.separator\" [ngClass]=\"{'ui-helper-hidden': item.visible === false}\"></li>\n                    <li class=\"ui-menuitem ui-widget ui-corner-all\" *ngIf=\"!item.separator\" [pMenuItemContent]=\"item\" [ngClass]=\"{'ui-helper-hidden': item.visible === false}\" [ngStyle]=\"item.style\" [class]=\"item.styleClass\"></li>\n                </ng-template>\n            </ul>\n        </div>\n    ",
+            template: "\n        <div #container [ngClass]=\"{'ui-menu ui-widget ui-widget-content ui-corner-all': true, 'ui-menu-dynamic ui-shadow': popup}\"\n            [class]=\"styleClass\" [ngStyle]=\"style\" (click)=\"preventDocumentDefault=true\" *ngIf=\"!popup || visible\"\n            [@overlayAnimation]=\"{value: 'visible', params: {showTransitionParams: showTransitionOptions, hideTransitionParams: hideTransitionOptions}}\" [@.disabled]=\"popup !== true\" (@overlayAnimation.start)=\"onOverlayAnimationStart($event)\" (@overlayAnimation.done)=\"onOverlayAnimationDone($event)\">\n            <ul>\n                <ng-template ngFor let-submenu [ngForOf]=\"model\" *ngIf=\"hasSubMenu()\">\n                    <li class=\"ui-menu-separator ui-widget-content\" *ngIf=\"submenu.separator\" [ngClass]=\"{'ui-helper-hidden': submenu.visible === false}\"></li>\n                    <li class=\"ui-submenu-header ui-widget-header ui-corner-all\" [attr.data-automationid]=\"submenu.automationId\" *ngIf=\"!submenu.separator\" [ngClass]=\"{'ui-helper-hidden': submenu.visible === false}\">{{submenu.label}}</li>\n                    <ng-template ngFor let-item [ngForOf]=\"submenu.items\">\n                        <li class=\"ui-menu-separator ui-widget-content\" *ngIf=\"item.separator\" [ngClass]=\"{'ui-helper-hidden': (item.visible === false ||\u00A0submenu.visible === false)}\"></li>\n                        <li class=\"ui-menuitem ui-widget ui-corner-all\" *ngIf=\"!item.separator\" [pMenuItemContent]=\"item\" [ngClass]=\"{'ui-helper-hidden': (item.visible === false || submenu.visible === false)}\" [ngStyle]=\"item.style\" [class]=\"item.styleClass\"></li>\n                    </ng-template>\n                </ng-template>\n                <ng-template ngFor let-item [ngForOf]=\"model\" *ngIf=\"!hasSubMenu()\">\n                    <li class=\"ui-menu-separator ui-widget-content\" *ngIf=\"item.separator\" [ngClass]=\"{'ui-helper-hidden': item.visible === false}\"></li>\n                    <li class=\"ui-menuitem ui-widget ui-corner-all\" *ngIf=\"!item.separator\" [pMenuItemContent]=\"item\" [ngClass]=\"{'ui-helper-hidden': item.visible === false}\" [ngStyle]=\"item.style\" [class]=\"item.styleClass\"></li>\n                </ng-template>\n            </ul>\n        </div>\n    ",
             animations: [
                 animations_1.trigger('overlayAnimation', [
                     animations_1.state('void', animations_1.style({
@@ -225,7 +253,7 @@ var Menu = /** @class */ (function () {
                 ])
             ]
         }),
-        __metadata("design:paramtypes", [core_1.ElementRef, core_1.Renderer2])
+        __metadata("design:paramtypes", [core_1.ElementRef, core_1.Renderer2, core_1.ChangeDetectorRef, core_1.NgZone])
     ], Menu);
     return Menu;
 }());

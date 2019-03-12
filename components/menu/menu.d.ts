@@ -1,4 +1,4 @@
-import { ElementRef, OnDestroy, Renderer2 } from '@angular/core';
+import { ElementRef, OnDestroy, Renderer2, ChangeDetectorRef, NgZone, EventEmitter } from '@angular/core';
 import { AnimationEvent } from '@angular/animations';
 import { MenuItem } from '../common/menuitem';
 export declare class MenuItemContent {
@@ -9,6 +9,8 @@ export declare class MenuItemContent {
 export declare class Menu implements OnDestroy {
     el: ElementRef;
     renderer: Renderer2;
+    cd: ChangeDetectorRef;
+    private zone;
     model: MenuItem[];
     popup: boolean;
     style: any;
@@ -18,6 +20,8 @@ export declare class Menu implements OnDestroy {
     baseZIndex: number;
     showTransitionOptions: string;
     hideTransitionOptions: string;
+    onShow: EventEmitter<void>;
+    onHide: EventEmitter<void>;
     containerViewChild: ElementRef;
     container: HTMLDivElement;
     documentClickListener: any;
@@ -25,10 +29,11 @@ export declare class Menu implements OnDestroy {
     preventDocumentDefault: boolean;
     target: any;
     visible: boolean;
-    constructor(el: ElementRef, renderer: Renderer2);
+    constructor(el: ElementRef, renderer: Renderer2, cd: ChangeDetectorRef, zone: NgZone);
     toggle(event: any): void;
     show(event: any): void;
     onOverlayAnimationStart(event: AnimationEvent): void;
+    onOverlayAnimationDone(event: AnimationEvent): void;
     appendOverlay(): void;
     restoreOverlayAppend(): void;
     moveOnTop(): void;

@@ -1,4 +1,15 @@
-import {NgModule,Component,ElementRef,OnDestroy,Input,Renderer2,ViewChild,Inject,forwardRef} from '@angular/core';
+import {
+    NgModule,
+    Component,
+    ElementRef,
+    OnDestroy,
+    Input,
+    Renderer2,
+    ViewChild,
+    Inject,
+    forwardRef,
+    ChangeDetectorRef, NgZone, Output, EventEmitter
+} from '@angular/core';
 import {trigger,state,style,transition,animate,AnimationEvent} from '@angular/animations';
 import {CommonModule} from '@angular/common';
 import {DomHandler} from '../dom/domhandler';
@@ -24,7 +35,7 @@ import {RouterModule} from '@angular/router';
 export class MenuItemContent {
 
     @Input("pMenuItemContent") item: MenuItem;
-    
+
     constructor(@Inject(forwardRef(() => Menu)) public menu: Menu) {}
 }
 
@@ -33,7 +44,7 @@ export class MenuItemContent {
     template: `
         <div #container [ngClass]="{'ui-menu ui-widget ui-widget-content ui-corner-all': true, 'ui-menu-dynamic ui-shadow': popup}"
             [class]="styleClass" [ngStyle]="style" (click)="preventDocumentDefault=true" *ngIf="!popup || visible"
-            [@overlayAnimation]="{value: 'visible', params: {showTransitionParams: showTransitionOptions, hideTransitionParams: hideTransitionOptions}}" [@.disabled]="popup !== true" (@overlayAnimation.start)="onOverlayAnimationStart($event)">
+            [@overlayAnimation]="{value: 'visible', params: {showTransitionParams: showTransitionOptions, hideTransitionParams: hideTransitionOptions}}" [@.disabled]="popup !== true" (@overlayAnimation.start)="onOverlayAnimationStart($event)" (@overlayAnimation.done)="onOverlayAnimationDone($event)">
             <ul>
                 <ng-template ngFor let-submenu [ngForOf]="model" *ngIf="hasSubMenu()">
                     <li class="ui-menu-separator ui-widget-content" *ngIf="submenu.separator" [ngClass]="{'ui-helper-hidden': submenu.visible === false}"></li>
@@ -74,32 +85,36 @@ export class Menu implements OnDestroy {
     @Input() style: any;
 
     @Input() styleClass: string;
-    
+
     @Input() appendTo: any;
 
     @Input() autoZIndex: boolean = true;
-    
+
     @Input() baseZIndex: number = 0;
-    
+
     @Input() showTransitionOptions: string = '225ms ease-out';
 
     @Input() hideTransitionOptions: string = '195ms ease-in';
 
+    @Output() onShow: EventEmitter<void> = new EventEmitter();
+
+    @Output() onHide: EventEmitter<void> = new EventEmitter();
+
     @ViewChild('container') containerViewChild: ElementRef;
-    
+
     container: HTMLDivElement;
-    
+
     documentClickListener: any;
 
     documentResizeListener: any;
-    
+
     preventDocumentDefault: boolean;
 
     target: any;
 
     visible: boolean;
-    
-    constructor(public el: ElementRef, public renderer: Renderer2) {}
+
+    constructor(public el: ElementRef, public renderer: Renderer2, public cd: ChangeDetectorRef, private zone: NgZone) {}
 
     toggle(event) {
         if (this.visible)
@@ -114,6 +129,7 @@ export class Menu implements OnDestroy {
         this.target = event.currentTarget;
         this.visible = true;
         this.preventDocumentDefault = true;
+        this.cd.markForCheck();
     }
 
     onOverlayAnimationStart(event: AnimationEvent) {
@@ -121,6 +137,7 @@ export class Menu implements OnDestroy {
             case 'visible':
                 if (this.popup) {
                     this.container = event.element;
+                    this.onShow.emit();
                     this.moveOnTop();
                     this.appendOverlay();
                     DomHandler.absolutePosition(this.container, this.target);
@@ -132,6 +149,17 @@ export class Menu implements OnDestroy {
             case 'void':
                 this.onOverlayHide();
             break;
+        }
+    }
+
+    onOverlayAnimationDone(event: AnimationEvent) {
+        switch(event.toState) {
+            case 'visible':
+                break;
+
+            case 'void':
+                this.onHide.emit();
+                break;
         }
     }
 
@@ -149,38 +177,39 @@ export class Menu implements OnDestroy {
             this.el.nativeElement.appendChild(this.container);
         }
     }
-    
+
     moveOnTop() {
         if (this.autoZIndex) {
             this.container.style.zIndex = String(this.baseZIndex + (++DomHandler.zindex));
         }
     }
-    
+
     hide() {
         this.visible = false;
+        this.cd.markForCheck();
     }
 
     onWindowResize() {
         this.hide();
     }
-    
+
     itemClick(event, item: MenuItem) {
         if (item.disabled) {
             event.preventDefault();
             return;
         }
-        
+
         if (!item.url) {
             event.preventDefault();
         }
-        
+
         if (item.command) {
             item.command({
                 originalEvent: event,
                 item: item
             });
         }
-        
+
         if (this.popup) {
             this.hide();
         }
@@ -188,12 +217,16 @@ export class Menu implements OnDestroy {
 
     bindDocumentClickListener() {
         if (!this.documentClickListener) {
-            this.documentClickListener = this.renderer.listen('document', 'click', () => {
-                if (!this.preventDocumentDefault) {
-                    this.hide();
-                }
+            this.zone.runOutsideAngular(() => {
+                this.documentClickListener = this.renderer.listen('document', 'click', () => {
+                    if (!this.preventDocumentDefault) {
+                        this.zone.run(() => {
+                            this.hide();
+                        });
+                    }
 
-                this.preventDocumentDefault = false;
+                    this.preventDocumentDefault = false;
+                });
             });
         }
     }
@@ -209,7 +242,7 @@ export class Menu implements OnDestroy {
         this.documentResizeListener = this.onWindowResize.bind(this);
         window.addEventListener('resize', this.documentResizeListener);
     }
-    
+
     unbindDocumentResizeListener() {
         if (this.documentResizeListener) {
             window.removeEventListener('resize', this.documentResizeListener);
@@ -223,14 +256,14 @@ export class Menu implements OnDestroy {
         this.preventDocumentDefault = false;
         this.target = null;
     }
-    
+
     ngOnDestroy() {
         if (this.popup) {
             this.restoreOverlayAppend();
             this.onOverlayHide();
         }
     }
-    
+
     hasSubMenu(): boolean {
         if (this.model) {
             for (var item of this.model) {
