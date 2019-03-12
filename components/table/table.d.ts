@@ -12,12 +12,12 @@ export declare class TableService {
     private valueSource;
     private totalRecordsSource;
     private columnsSource;
-    sortSource$: import("rxjs/internal/Observable").Observable<SortMeta | SortMeta[]>;
-    selectionSource$: import("rxjs/internal/Observable").Observable<{}>;
-    contextMenuSource$: import("rxjs/internal/Observable").Observable<any>;
-    valueSource$: import("rxjs/internal/Observable").Observable<any>;
-    totalRecordsSource$: import("rxjs/internal/Observable").Observable<any>;
-    columnsSource$: import("rxjs/internal/Observable").Observable<{}>;
+    sortSource$: import("rxjs").Observable<SortMeta | SortMeta[]>;
+    selectionSource$: import("rxjs").Observable<{}>;
+    contextMenuSource$: import("rxjs").Observable<any>;
+    valueSource$: import("rxjs").Observable<any>;
+    totalRecordsSource$: import("rxjs").Observable<any>;
+    columnsSource$: import("rxjs").Observable<{}>;
     onSort(sortMeta: SortMeta | SortMeta[]): void;
     onSelectionChange(): void;
     onContextMenu(data: any): void;

@@ -10,10 +10,10 @@ export declare class TreeTableService {
     private selectionSource;
     private contextMenuSource;
     private uiUpdateSource;
-    sortSource$: import("rxjs/internal/Observable").Observable<SortMeta | SortMeta[]>;
-    selectionSource$: import("rxjs/internal/Observable").Observable<{}>;
-    contextMenuSource$: import("rxjs/internal/Observable").Observable<any>;
-    uiUpdateSource$: import("rxjs/internal/Observable").Observable<any>;
+    sortSource$: import("rxjs").Observable<SortMeta | SortMeta[]>;
+    selectionSource$: import("rxjs").Observable<{}>;
+    contextMenuSource$: import("rxjs").Observable<any>;
+    uiUpdateSource$: import("rxjs").Observable<any>;
     onSort(sortMeta: SortMeta | SortMeta[]): void;
     onSelectionChange(): void;
     onContextMenu(node: any): void;
